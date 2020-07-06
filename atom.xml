@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://veaer.com/"/>
-  <updated>2020-07-06T10:23:27.222Z</updated>
+  <updated>2020-07-06T15:42:13.908Z</updated>
   <id>http://veaer.com/</id>
   
   <author>
@@ -15,6 +15,64 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>2020年年中面试-Redis</title>
+    <link href="http://veaer.com/2020/07/06/2020%E5%B9%B4%E5%B9%B4%E4%B8%AD%E9%9D%A2%E8%AF%95-Redis/"/>
+    <id>http://veaer.com/2020/07/06/2020%E5%B9%B4%E5%B9%B4%E4%B8%AD%E9%9D%A2%E8%AF%95-Redis/</id>
+    <published>2020-07-06T14:38:00.000Z</published>
+    <updated>2020-07-06T15:42:13.908Z</updated>
+    
+    <content type="html"><![CDATA[<p>Redis的篇幅会比较小一些，面试中更多的是在实战中怎么灵活地使用去解决现实问题。</p><h2 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h2><h3 id="常用的数据结构"><a href="#常用的数据结构" class="headerlink" title="常用的数据结构"></a>常用的数据结构</h3><p>Redis 有5种基础数据结构，分别为 string、list、hash、set、zset。</p><p>string 的扩容和 go 的切片扩容很相似，当字符串长度小于1M 时，扩容都是加倍现有的空间，如果超过1M，每次扩容会扩容1M，最大长度为512M。</p><p>list 可以用来做简单的队列使用，如果你对数据丢失容忍度比较高的话。</p><p>如果你的 Redis 集群是分片的，那么一定小心不要让你的 map 太大，容易造成负载不均衡。</p><p>zset 底层使用的一个 hash 再加一个跳表来实现的。</p><h3 id="跳表时怎么实现的，Redis-又做了什么优化"><a href="#跳表时怎么实现的，Redis-又做了什么优化" class="headerlink" title="跳表时怎么实现的，Redis 又做了什么优化"></a>跳表时怎么实现的，Redis 又做了什么优化</h3><p>跳表中是分层的，每个元素在被加入进去的时候，都会使用一个随机算法给它分配一个合理的层数，然后再将这个节点同搜索路径上的前后节点通过指针相关串起来。<br>更新的方式是先讲这个元素，再重新加入。<br>因为 Redis 的 Zset 是可以返回排名的，所以 Redis 在跳表的基础上，记录了从当前节点跳到下一节点中间节点的数量。</p><h3 id="RDB-AOF"><a href="#RDB-AOF" class="headerlink" title="RDB AOF"></a>RDB AOF</h3><p>RDB 和 AOF 是 Redis 实现持久化的两个方案</p><p>Redis 有两个指令可以生成 RDB 文件，一个是 SAVE 一个是 BGSAVE</p><ol><li>SAVE：redis在执行 SAVE 指令的时候，会阻塞住服务器进程，在 RDB 文件创建完成之前，不可以处理任何命令请求</li><li>BGSAVE：redis 可以用这个命令派生出一个子进程，子进程来生成 RDB 文件，父进程继续处理命令，不会阻塞进程。运用 COW（写时复制）的原理进行快照的生成。</li></ol><p>AOF 日志存储的是 Redis 服务器的会对内存进行修改的顺序指令记录。通过调用 fsync 保存进磁盘(很费时)，所以一般生产环境会选择让操作系统决定何时同步磁盘。所以极端情况下是会丢数据的。</p><p>一般来说，现在会采用 RDB+AOF 的混合持久化。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;Redis的篇幅会比较小一些，面试中更多的是在实战中怎么灵活地使用去解决现实问题。&lt;/p&gt;
+&lt;h2 id=&quot;Redis&quot;&gt;&lt;a href=&quot;#Redis&quot; class=&quot;headerlink&quot; title=&quot;Redis&quot;&gt;&lt;/a&gt;Redis&lt;/h2&gt;&lt;h3 id=&quot;常用的数
+      
+    
+    </summary>
+    
+    
+      <category term="个人" scheme="http://veaer.com/categories/%E4%B8%AA%E4%BA%BA/"/>
+    
+    
+      <category term="面试" scheme="http://veaer.com/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+      <category term="Redis" scheme="http://veaer.com/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>2020年年中面试-MySQL</title>
+    <link href="http://veaer.com/2020/07/06/2020%E5%B9%B4%E5%B9%B4%E4%B8%AD%E9%9D%A2%E8%AF%95-MySQL/"/>
+    <id>http://veaer.com/2020/07/06/2020%E5%B9%B4%E5%B9%B4%E4%B8%AD%E9%9D%A2%E8%AF%95-MySQL/</id>
+    <published>2020-07-06T10:32:00.000Z</published>
+    <updated>2020-07-06T15:42:13.908Z</updated>
+    
+    <content type="html"><![CDATA[<p>年中面试第二部分，打算简单的讲一下 MySQL 面试中碰到的问题，本文不做太多的延伸，只针对题目。</p><h2 id="MySQL"><a href="#MySQL" class="headerlink" title="MySQL"></a>MySQL</h2><h3 id="常见的数据库存储引擎有哪些，有什么区别"><a href="#常见的数据库存储引擎有哪些，有什么区别" class="headerlink" title="常见的数据库存储引擎有哪些，有什么区别"></a>常见的数据库存储引擎有哪些，有什么区别</h3><p>这是个老生常谈的问题，常见的就是 innoDB 和 MyIsam，面试官想问的通常就是这两个</p><ol><li>innoDB 支持事务，MyIsam 不支持</li><li>innoDB 是聚集索引，使用 B+Tree 作为索引结构，主键和数据在一起，在数据查询的时候，非主键索引会先索引到主键，然后再查询导数据。MyIsam 是非聚集索引，索引与文件是分开的，索引保存的是到数据文件的指针</li><li>innoDB 支持行级锁，MyIsam 支持表级锁</li><li>innoDB 必须要有主键，MyIsam 可以没有</li><li>MyIsam 用一个变量保存了表的行数，在执行 count(*) 的时候可以 O(1) 地返回，但是不能有 where，innoDB 则会扫描全表</li></ol><h3 id="索引数据结构为什么选择B-树，和hash的优劣"><a href="#索引数据结构为什么选择B-树，和hash的优劣" class="headerlink" title="索引数据结构为什么选择B+树，和hash的优劣"></a>索引数据结构为什么选择B+树，和hash的优劣</h3><p>hash索引的特性是 k-v 结构，在单行查找时有很高的效率，但是范围查找地成本就会很高。而且不可避免地会发生 hash 冲突问题，这时候需要引入链表来协助存储。</p><p>其实还有一种有序数组的方案，在查询时可以利用二分法等查找方案极大地降低时间复杂度，但是在插入地时候又暴露出了很大的问题，插入新数据，需要把后面所有数据后移。</p><p>相较之下，B+ 树的很多特性就很优秀</p><ol><li>多路平衡树，左节点小于右节点，父节点小于右节点，查找效率高</li><li>为了解决树太高，访问磁盘过高，B+ 树是一个多叉树</li><li>查询以及更新的时间复杂度都为 O(log(N))</li><li>扩展到分库分表的时候，可以使用雪花算法做一个 id 生成器，保证 id 有序增长，不会发生页分裂</li></ol><h3 id="事务隔离等级有哪些"><a href="#事务隔离等级有哪些" class="headerlink" title="事务隔离等级有哪些"></a>事务隔离等级有哪些</h3><ol><li>读未提交(RU)：直接读取最新的记录值，不同事务之间会发生脏读、幻读、不可重复读的问题</li><li>读已提交(RC)：在每条SQL执行开始，会先创建一个视图/更新视图，不同事务之间会出现不可重复读、幻读问题</li><li>可重复读(RR)：开始事务之前创建一个视图，整个事务持续期间共享这一个视图，不同事务之间会出现幻读问题</li><li>序列化(S)：读加读锁，写加写锁，不会出现问题</li></ol><h3 id="MySQL是怎么保证事务的几个特性的"><a href="#MySQL是怎么保证事务的几个特性的" class="headerlink" title="MySQL是怎么保证事务的几个特性的"></a>MySQL是怎么保证事务的几个特性的</h3><ol><li>redo log重做日志用来保证事务的持久性</li><li>undo log回滚日志保证事务的原子性</li><li>undo log+redo log保证事务的一致性</li><li>锁（共享、排他）用来保证事务的隔离性</li></ol><h3 id="行锁表锁间隙锁排它锁"><a href="#行锁表锁间隙锁排它锁" class="headerlink" title="行锁表锁间隙锁排它锁"></a>行锁表锁间隙锁排它锁</h3><p>共享锁(S)：读锁。允许一个事务去读取一行，阻止其他事务修改这一行。如果事务 A 对数据对象 L 加了 S 锁，事务 B 只能读 L，不能修改 L，只可以加 S 锁，不可以加 X 锁，直到 L上的 S 锁都释放之后，才可以加 X 锁。</p><p>排它锁(X)：写锁。允许获取 X 锁的事务对数据进行修改，组织其他事务对操作的数据进行加锁（ X 锁与 S 锁均不可以）。</p><p>update、insert、delete 都会自动给涉及到的数据加上排它锁，但是普通的 select 没有锁机制。</p><p>间隙锁(Next-Key)：当我们使用范围条件查询，并请求共享锁或者排它锁的时候，innoDB 会给符合条件的记录加锁，对于键值在范围内，但是并不存在的记录区间，会加上间隙锁。</p><h3 id="redo-log、undo-log、bin-log-的记录时间"><a href="#redo-log、undo-log、bin-log-的记录时间" class="headerlink" title="redo log、undo log、bin log 的记录时间"></a>redo log、undo log、bin log 的记录时间</h3><p>以一个具体事务举例 A=1,B=2 -&gt; A=3,B=4</p><ol><li>事务开始</li><li>查询 A 这一行记录，如果不在内存里，去磁盘读如内存</li><li>将 A=1 记录 undo log</li><li>A 设置为3</li><li>更新进内存</li><li>写入 redo log</li><li>查询 B…</li><li>…</li><li>…</li><li>…</li><li>…</li><li>写 binlog</li><li>提交 commit</li></ol>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;年中面试第二部分，打算简单的讲一下 MySQL 面试中碰到的问题，本文不做太多的延伸，只针对题目。&lt;/p&gt;
+&lt;h2 id=&quot;MySQL&quot;&gt;&lt;a href=&quot;#MySQL&quot; class=&quot;headerlink&quot; title=&quot;MySQL&quot;&gt;&lt;/a&gt;MySQL&lt;/h2&gt;&lt;h3 
+      
+    
+    </summary>
+    
+    
+      <category term="个人" scheme="http://veaer.com/categories/%E4%B8%AA%E4%BA%BA/"/>
+    
+    
+      <category term="面试" scheme="http://veaer.com/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+      <category term="MySQL" scheme="http://veaer.com/tags/MySQL/"/>
+    
+  </entry>
   
   <entry>
     <title>2020年年中面试-Go 语言</title>
