@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Veaer</title>
+  
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://veaer.com/"/>
+  <updated>2020-07-06T10:23:27.222Z</updated>
+  <id>http://veaer.com/</id>
+  
+  <author>
+    <name>Veaer</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>2020年年中面试-Go 语言</title>
+    <link href="http://veaer.com/2020/07/06/2020%E5%B9%B4%E5%B9%B4%E4%B8%AD%E9%9D%A2%E8%AF%95-Go%E8%AF%AD%E8%A8%80/"/>
+    <id>http://veaer.com/2020/07/06/2020%E5%B9%B4%E5%B9%B4%E4%B8%AD%E9%9D%A2%E8%AF%95-Go%E8%AF%AD%E8%A8%80/</id>
+    <published>2020-07-06T06:41:00.000Z</published>
+    <updated>2020-07-06T10:23:27.222Z</updated>
+    
+    <content type="html"><![CDATA[<p>本文开个坑，讲一下个人在面试过程中遇到的一些问题。</p><h2 id="GO语言"><a href="#GO语言" class="headerlink" title="GO语言"></a>GO语言</h2><h3 id="简述下对-context-包的理解"><a href="#简述下对-context-包的理解" class="headerlink" title="简述下对 context 包的理解"></a>简述下对 context 包的理解</h3><p>context.Context 包是1.7版本中引入标准库的接口，定义了四个需要实现的方法</p><ol><li><code>Deadline</code> - 返回当前 context 完成工作的截止日期</li><li><code>Done</code> - 返回一个 channel，这个 channel 会在当前 context 结束任务(工作完成或者被取消)后被关闭</li><li><code>Err</code> - 返回当前 context 结束的原因，只会在 Done 返回的 channel 被关闭的时候才会有可能返回非空的值(正常完成为空)。被取消时返回 Canceled，超时时会返回 DeadlineExceeded。</li><li><code>Value</code> - 从当前 context 中取值，可以通过这个属性来传递数据</li></ol><p>context包提供了<code>context.Background</code>、<code>context.TODO</code>、<code>context.WithDeadline</code>、<code>context.WithTimeout</code>、<code>context.WithCancel</code>、<code>context.WithValue</code>几个方法来构造 context。</p><ol><li><code>context.Background</code>、<code>context.TODO</code>会返回预先初始化好的私有变量，在源码中二者并没有什么区别，在语义上，background 为最顶层的上下文，其余上下文都应该是由它衍生出来，toto 是在你不确定用哪种上下文的时候使用</li><li><code>context.WithCancel</code>是在返回值中增加了一个 cancel 方法，用于你手动取消 context</li><li><code>context.WithDeadline</code>、<code>context.WithTimeout</code>的实现差不多，两者一个是传入一个截止时间，一个是传入一个超时时间，底层都是设置了一个定时器，到了时间会触发 cancel 方法，来取消工作</li><li><code>context.WithValue</code>方法则是会返回一个你传入的 context 的子 context，实现方法大概是<pre><code class="go"> type valueCtx struct {     Context     key, val interface{} }</code></pre></li></ol><p>综上，context 的实现大概是做了一个树的模型，在使用Value方法取值的时候，也是从子一直往父级遍历取，所以如果你在不同级用相同的 key 存了一个值，会取到子级的值。</p><h3 id="协程和进程之间的区别，CSP模型"><a href="#协程和进程之间的区别，CSP模型" class="headerlink" title="协程和进程之间的区别，CSP模型"></a>协程和进程之间的区别，CSP模型</h3><p>这是个老生常谈的问题</p><ol><li>进程是资源分配的单位，线程是操作系统调度的单位</li><li>进程切换需要的资源很最大，效率很低；线程切换需要的资源一般，效率一般；协程切换任务资源很小，效率高</li><li>进程之间不共享堆，也不共享栈；线程之间共享堆，不共享栈；协程共享堆，不共享栈</li></ol><p>CSP 是 Communicating Sequential Process 的简称，中文可以叫做通信顺序进程，是一种并发模型，go 通过 channel 和 goroutine 来实现了这个。</p><p><strong>不要以共享内存的方式来通信，相反，要通过通信来共享内存。</strong></p><h3 id="简单写一个两个协程交错打印奇数偶数的实现"><a href="#简单写一个两个协程交错打印奇数偶数的实现" class="headerlink" title="简单写一个两个协程交错打印奇数偶数的实现"></a>简单写一个两个协程交错打印奇数偶数的实现</h3><ol><li><p>两个channel方案</p><pre><code class="go"> func main() {     fmt.Println(&quot;Hello, playground&quot;)     chA := make(chan int, 1)     chB := make(chan int, 1)     go solveA(chA, chB)     go solveB(chA, chB)     chA &lt;- 1     time.Sleep(10*time.Second) } func solveA(chA, chB chan int) {     for {         select {         case num := &lt;-chA:             fmt.Println(num)             chB &lt;- num + 1         }     } } func solveB(chA, chB chan int) {     for {         select {         case num := &lt;-chB:             fmt.Println(num)             chA &lt;- num + 1         }     } }</code></pre></li><li><p>atomic包方案<br>这个比较简单，也是两个协程，两个 for 循环，去检测同一个变量是否为奇数/偶数，如果是，就打印，然后自增</p></li></ol><h3 id="make和new的区别"><a href="#make和new的区别" class="headerlink" title="make和new的区别"></a>make和new的区别</h3><ol><li><code>make</code>的作用是初始化内置的数据结构(slice、map、channel)</li><li><code>new</code>的作用是根据传入的类型分配一片内存空间，并返回相应的指针</li></ol><h3 id="切片和数组的关系以及差别"><a href="#切片和数组的关系以及差别" class="headerlink" title="切片和数组的关系以及差别"></a>切片和数组的关系以及差别</h3><p>数组是由相同元素的集合组成的数据结构，计算机会为数组分配一片连续内存保存其中的元素。</p><p>数组可以从两个维度来描述：类型和元素个数。两个数组之间，有任意纬度不同，就可认定两者为不同类型。</p><p>在 go 中切片比数组更为常用，可认定切片为如下结构：</p><pre><code class="go">type Slice struct {    Data uintptr    Len int    Cap int}</code></pre><p>Data 为指向底层数组的内存空间的指针，Len为当前切片的长度，Cap为当前切片的容量，即底层数组的大小。</p><p>切片的扩容需要注意一下，遵循以下规则：</p><ol><li>如果期望容量大于当前容量的两倍，会使用期望容量</li><li>如果当前切片容量小于1024，就会翻倍</li><li>如果当前容量大于1024，就会每次增加25%，直到新容量大于期望容量</li></ol><h3 id="内存分配，怎么决定一个变量分配栈还是堆"><a href="#内存分配，怎么决定一个变量分配栈还是堆" class="headerlink" title="内存分配，怎么决定一个变量分配栈还是堆"></a>内存分配，怎么决定一个变量分配栈还是堆</h3><p>Go 的内存分配器，会对一个变量进行逃逸分析，从而决定变量在堆还是栈<br>Go 语言的内存分配器包括内存管理单元、线程缓存、中心缓存和页堆</p><ol><li>内存管理单元是内存管理的基本单元，是一个双向链表的结构</li><li>线程缓存会与线程上的处理器一一绑定，用于缓存用户申请的微小对象</li><li>中心缓存管理的内存管理单元在被访问时需要使用互斥锁</li><li>页堆是内存分配的核心，整个程序只会存在一个全局的结构，32k以上大小的对象会直接在堆上分配内存</li></ol><h3 id="垃圾回收"><a href="#垃圾回收" class="headerlink" title="垃圾回收"></a>垃圾回收</h3><p>使用三色标记法将程序中的对象分为白色、黑色、灰色三类</p><ol><li>白色对象：潜在的垃圾，内存可能会被垃圾回收器回收</li><li>黑色对象：活跃的对象，包括不存在任何引用外部指针的对象以及从根对象可达的对象</li><li>灰色对象：活跃的对象，因为存在指向白色对象的外部指针，所以垃圾回收器会扫描这些对象的子对象</li></ol><p>go 的垃圾回收是很复杂的一个模块，在多个版本均对其进行了优化，现在使用了三色抽象、并发增量回收、混合写屏障(将被覆盖的对象标记成灰色并在当前栈没有被扫描时的新对象也标记为灰色，在垃圾收集的表计阶段时创建的对象都标记为黑色)、调步算法以及用户程序协助等机制将垃圾收集的暂停时间优化至毫秒以下。</p><p>详情可以阅读 <a href="https://draveness.me/golang/docs/part3-runtime/ch07-memory/golang-garbage-collector/" target="_blank" rel="noopener">Go语言设计与实现-垃圾回收器</a> 一文</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;本文开个坑，讲一下个人在面试过程中遇到的一些问题。&lt;/p&gt;
+&lt;h2 id=&quot;GO语言&quot;&gt;&lt;a href=&quot;#GO语言&quot; class=&quot;headerlink&quot; title=&quot;GO语言&quot;&gt;&lt;/a&gt;GO语言&lt;/h2&gt;&lt;h3 id=&quot;简述下对-context-包的理解&quot;&gt;&lt;a hr
+      
+    
+    </summary>
+    
+    
+      <category term="个人" scheme="http://veaer.com/categories/%E4%B8%AA%E4%BA%BA/"/>
+    
+    
+      <category term="面试" scheme="http://veaer.com/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+      <category term="Go" scheme="http://veaer.com/tags/Go/"/>
+    
+  </entry>
+  
+</feed>
